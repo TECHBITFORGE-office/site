@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APINOW - Code Studio</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.32.6/ace.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ide: {
+                            bg: '#09090b',       // Deepest black/zinc
+                            sidebar: '#121216',  // Slightly lighter
+                            panel: '#18181b',    // Panels
+                            border: '#27272a',   // Subtle borders
+                            accent: '#3b82f6',   // Primary Blue
+                            text: '#e4e4e7',     // Main text
+                            muted: '#a1a1aa'     // Muted text
+                        },
+                        neon: {
+                            blue: '#00f3ff',
+                            purple: '#bc13fe',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    boxShadow: {
+                        'glow': '0 0 20px rgba(59, 130, 246, 0.15)',
+                        'input-glow': '0 0 0 2px rgba(59, 130, 246, 0.2), 0 0 20px rgba(59, 130, 246, 0.1)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Base Reset & Scrollbars */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+        body { background-color: #09090b; color: #e4e4e7; overflow: hidden; }
+
+        /* Glassmorphism Utilities */
+        .glass {
+            background: rgba(24, 24, 27, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* AI Input Container (Floating Command Bar Style) */
+        .code_studio-input-container {
+            position: fixed; 
+            bottom: 30px; 
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%; 
+            max-width: 650px;
+            background-color: rgba(18, 18, 22, 0.9); 
+            backdrop-filter: blur(20px);
+            border-radius: 16px; 
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255,255,255,0.05);
+            padding: 8px; 
+            display: flex; 
+            gap: 10px; 
+            z-index: 100;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .code_studio-input-container:focus-within {
+            box-shadow: 0 25px 60px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(59, 130, 246, 0.3);
+            transform: translateX(-50%) translateY(-2px);
+            background-color: rgba(22, 22, 27, 0.95); 
+        }
+
+        .code_studio-input-field {
+            flex-grow: 1;
+            display: flex; 
+            align-items: center; 
+            background-color: transparent;
+            padding: 0 12px;
+        }
+        
+        .code_studio-input-field input { 
+            width: 100%; 
+            background: transparent; 
+            border: none; 
+            outline: none; 
+            color: #fff; 
+            font-size: 0.95rem; 
+            padding: 12px 0;
+            font-family: 'Inter', sans-serif;
+        }
+        
+        .code_studio-input-field input::placeholder { color: #52525b; font-weight: 400; }
+
+        .btn-action {
+            display: flex; align-items: center; justify-content: center;
+            padding: 8px 14px; border-radius: 10px;
+            font-size: 0.8rem; font-weight: 600; cursor: pointer; 
+            transition: all 0.2s ease; border: 1px solid transparent;
+        }
+        
+        .btn-enhance { 
+            background: rgba(59, 130, 246, 0.1); 
+            color: #60a5fa; 
+            border: 1px solid rgba(59, 130, 246, 0.2); 
+        }
+        .btn-enhance:hover { background: rgba(59, 130, 246, 0.2); }
+
+        .btn-send {
+            width: 40px; height: 40px; 
+            background: #fff; color: #000;
+            border-radius: 10px; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: transform 0.2s;
+        }
+        .btn-send:hover { transform: scale(1.05); }
+        .btn-send.loading { opacity: 0.7; pointer-events: none; }
+        .btn-send.loading i { animation: spin 1s linear infinite; }
+
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        /* Terminal Overlay */
+        #ai-terminal {
+            position: absolute; bottom: 0; left: 0; right: 0; height: 0;
+            background: #09090b; border-top: 1px solid #27272a;
+            transition: height 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
+            overflow: hidden; z-index: 20;
+            display: flex; flex-direction: column;
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+        }
+        #ai-terminal.open { height: 240px; }
+
+        /* Preview Area */
+        .preview-browser-header {
+            background: #18181b; border-bottom: 1px solid #27272a;
+            height: 40px; display: flex; align-items: center; padding: 0 16px; gap: 16px;
+        }
+        .url-bar {
+            flex: 1; background: #09090b; border-radius: 6px; height: 26px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; color: #71717a; border: 1px solid #27272a;
+        }
+        .window-dots { display: flex; gap: 6px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; }
+        
+        /* Ace Editor Customization */
+        .ace_editor { background-color: #09090b !important; }
+        .ace_gutter { background-color: #09090b !important; color: #52525b !important; border-right: 1px solid #18181b; }
+        
+        /* Background Grid */
+        .bg-grid {
+            background-size: 30px 30px;
+            background-image: linear-gradient(to right, #18181b 1px, transparent 1px),
+                              linear-gradient(to bottom, #18181b 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="h-screen w-full flex flex-col text-sm antialiased font-sans bg-ide-bg">
+
+    <custom-navbar></custom-navbar>
+
+    <main class="flex-1 flex overflow-hidden relative pt-[60px]">
+        
+        <aside class="w-64 bg-ide-sidebar border-r border-ide-border flex flex-col hidden md:flex">
+            <div class="h-10 px-4 border-b border-ide-border flex justify-between items-center">
+                <span class="text-[11px] font-bold text-ide-muted uppercase tracking-wider">Project Files</span>
+                <button onclick="initEditor()" class="text-ide-muted hover:text-white transition-colors" title="Reset"><i class="fa-solid fa-rotate-right"></i></button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto py-2" id="file-explorer-list">
+                </div>
+
+            <div class="p-3 border-t border-ide-border">
+                <div class="bg-ide-bg rounded-md p-2 border border-ide-border flex items-center gap-3">
+                    <div class="w-8 h-8 rounded bg-gradient-to-br from-neon-blue to-neon-purple flex items-center justify-center text-black font-bold text-xs">JS</div>
+                    <div class="flex flex-col overflow-hidden">
+                        <span class="text-xs font-medium text-white truncate">Main Repo</span>
+                        <span id="repo-name-display" class="text-[10px] text-ide-muted truncate">master</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <section class="flex-1 flex flex-col bg-ide-bg relative min-w-0">
+            
+            <div class="h-10 bg-ide-sidebar border-b border-ide-border flex items-end px-0 gap-[1px] overflow-x-auto no-scrollbar" id="editor-tabs">
+                </div>
+
+            <div class="flex-1 relative flex overflow-hidden">
+                <div id="editor" class="w-full h-full text-sm"></div>
+            </div>
+
+            <div id="ai-terminal">
+                <div class="bg-ide-panel h-9 px-4 text-xs text-ide-muted border-b border-ide-border flex justify-between items-center select-none">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-neon-blue"></i> 
+                        <span class="font-mono">AI Output Stream</span>
+                    </div>
+                    <button onclick="document.getElementById('ai-terminal').classList.remove('open')" class="hover:text-white"><i class="fa-solid fa-chevron-down"></i></button>
+                </div>
+                <div id="chatMessages" class="flex-1 overflow-y-auto p-4 flex flex-col gap-3 font-mono text-xs">
+                    </div>
+            </div>
+
+            <div class="h-6 bg-ide-sidebar border-t border-ide-border flex items-center justify-between px-3 text-[10px] text-ide-muted select-none">
+                <div class="flex items-center gap-3">
+                    <span class="hover:text-white cursor-pointer"><i class="fa-solid fa-code-branch mr-1"></i>main</span>
+                    <span class="hover:text-white cursor-pointer"><i class="fa-regular fa-circle-xmark mr-1"></i>0 errors</span>
+                </div>
+                <div class="flex items-center gap-4 font-mono">
+                    <span id="cursor-pos">Ln 1, Col 1</span>
+                    <span id="lang-display">HTML</span>
+                    <span>UTF-8</span>
+                    <span class="text-neon-blue"><i class="fa-solid fa-circle text-[6px] mr-1"></i>Live</span>
+                </div>
+            </div>
+        </section>
+
+        <aside class="hidden lg:flex flex-col border-l border-ide-border bg-[#000] relative transition-all duration-500 ease-in-out" id="preview-container" style="width: 40%;">
+            <div class="preview-browser-header">
+                <div class="window-dots">
+                    <div class="dot bg-red-500/80"></div>
+                    <div class="dot bg-yellow-500/80"></div>
+                    <div class="dot bg-green-500/80"></div>
+                </div>
+                <div class="url-bar">
+                    <i class="fa-solid fa-lock text-[8px] mr-1 text-gray-500"></i> localhost:3000
+                </div>
+                <div class="flex gap-3 text-gray-500">
+                    <button onclick="updatePreview()" title="Refresh" class="hover:text-white"><i class="fa-solid fa-rotate-right"></i></button>
+                    <button class="hover:text-white"><i class="fa-solid fa-up-right-from-square"></i></button>
+                </div>
+            </div>
+
+            <div class="flex-1 bg-grid flex items-center justify-center overflow-hidden relative">
+                <div id="preview-frame-wrapper" class="preview-frame w-full h-full bg-white relative transition-all duration-300">
+                     <iframe src="about:blank" class="w-full h-full border-none" id="demo-iframe" sandbox="allow-scripts allow-modals"></iframe>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <div class="code_studio-input-container" id="input-container">
+        <button class="btn-enhance" title="Enhance prompt">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+        </button>
+        <div class="code_studio-input-field">
+            <input type="text" id="chatInput" placeholder="Describe a UI component or logic to generate..." autocomplete="off">
+        </div>
+        <button class="btn-send" id="sendBtn">
+            <i class="fa-solid fa-arrow-up"></i>
+        </button>
+    </div>
+
+    <script>
+        /* -------------------------------------------------------
+           CUSTOM NAVBAR WEB COMPONENT (UPDATED STYLE)
+           ------------------------------------------------------- */
+        class CustomNavbar extends HTMLElement {
+            connectedCallback() {
+                this.attachShadow({ mode: "open" });
+                this.render();
+                this.initAuthListener();
+            }
+
+            render(isLoggedIn = false, userData = null) {
+                let avatarURL = localStorage.getItem("avatar_url");
+                if (userData?.avatar_url) {
+                    avatarURL = userData.avatar_url.startsWith('http') ? userData.avatar_url : new URL(userData.avatar_url, window.location.origin).href;
+                }
+
+                this.shadowRoot.innerHTML = `
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                <style>
+                    :host { display: block; font-family: 'Inter', sans-serif; }
+                    nav {
+                        background: rgba(9, 9, 11, 0.8); backdrop-filter: blur(12px);
+                        border-bottom: 1px solid #27272a; height: 60px;
+                        padding: 0 1.5rem; display: flex; justify-content: space-between; align-items: center;
+                        position: fixed; top: 0; left: 0; right: 0; z-index: 50;
+                    }
+                    .logo { display: flex; align-items: center; gap: 0.8rem; text-decoration: none; color: #fff; }
+                    .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #00f3ff, #bc13fe); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #000; }
+                    .logo-text { font-weight: 700; font-size: 1.1rem; letter-spacing: -0.5px; }
+                    
+                    .view-toggle {
+                        background: #18181b; padding: 3px; border-radius: 8px; border: 1px solid #27272a; display: flex;
+                    }
+                    .toggle-btn {
+                        padding: 6px 12px; border-radius: 6px; border: none; background: transparent; 
+                        color: #71717a; font-size: 0.8rem; font-weight: 500; cursor: pointer; transition: all 0.2s;
+                        display: flex; align-items: center; gap: 6px;
+                    }
+                    .toggle-btn.active { background: #27272a; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.2); }
+                    .toggle-btn:hover:not(.active) { color: #a1a1aa; }
+
+                    .nav-right { display: flex; align-items: center; gap: 1rem; }
+                    .btn-signin { color: #a1a1aa; font-size: 0.9rem; text-decoration: none; font-weight: 500; transition: color 0.2s; }
+                    .btn-signin:hover { color: #fff; }
+                    .btn-primary { background: #fff; color: #000; padding: 0.5rem 1rem; border-radius: 6px; font-weight: 600; text-decoration: none; font-size: 0.9rem; transition: opacity 0.2s; }
+                    .btn-primary:hover { opacity: 0.9; }
+
+                    .user-profile { display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 4px 8px 4px 4px; border-radius: 20px; border: 1px solid transparent; transition: background 0.2s; }
+                    .user-profile:hover { background: #27272a; border-color: #3f3f46; }
+                    .avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #3f3f46; }
+                    .menu-icon { color: #71717a; font-size: 12px; }
+
+                    .dropdown { display: none; position: absolute; top: 70px; right: 20px; background: #18181b; border: 1px solid #27272a; border-radius: 10px; min-width: 180px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); padding: 5px; animation: slideIn 0.2s ease; }
+                    .dropdown.open { display: block; }
+                    @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+                    .dropdown a { display: flex; align-items: center; gap: 8px; padding: 10px 12px; color: #d4d4d8; text-decoration: none; font-size: 0.85rem; border-radius: 6px; }
+                    .dropdown a:hover { background: #27272a; color: #fff; }
+                </style>
+
+                <nav>
+                    <a class="logo" href="/">
+                        <div class="logo-icon">C</div>
+                        <span class="logo-text">Code Studio</span>
+                    </a>
+
+                    <div class="view-toggle">
+                        <button class="toggle-btn active" id="nav-btn-desktop"><i class="fa-solid fa-desktop"></i> Desktop</button>
+                        <button class="toggle-btn" id="nav-btn-mobile"><i class="fa-solid fa-mobile-screen"></i> Mobile</button>
+                    </div>
+
+                    <div class="nav-right">
+                    ${isLoggedIn ? `
+                        <div class="user-profile menu-btn">
+                            <img src="${avatarURL}" class="avatar">
+                            <i class="fa-solid fa-chevron-down menu-icon"></i>
+                        </div>
+                        <div class="dropdown">
+                            <div style="padding:8px 12px; font-size:11px; color:#71717a; font-weight:700; text-transform:uppercase;">${userData?.full_name || 'My Account'}</div>
+                            <a href="#" id="action-save"><i class="fa-solid fa-cloud-arrow-up"></i> Save Project</a>
+                            <a href="#" id="action-download"><i class="fa-solid fa-download"></i> Download Zip</a>
+                            <div style="height:1px; background:#27272a; margin:4px 0;"></div>
+                            <a href="/signout" style="color:#ef4444;"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign Out</a>
+                        </div>` 
+                    : `
+                        <a href="/signin" class="btn-signin">Log In</a>
+                        <a href="/signup" class="btn-primary">Sign Up</a>`}
+                    </div>
+                </nav>`;
+                
+                this.initDropdown();
+                this.initViewToggle();
+                this.initActionButtons();
+            }
+
+            initDropdown() {
+                const dropdown = this.shadowRoot.querySelector(".dropdown");
+                const menuBtn = this.shadowRoot.querySelector(".menu-btn");
+                if (menuBtn && dropdown) {
+                    menuBtn.onclick = (e) => { e.stopPropagation(); dropdown.classList.toggle("open"); };
+                    document.addEventListener("click", () => dropdown.classList.remove("open"));
+                }
+            }
+
+            initViewToggle() {
+                const btnD = this.shadowRoot.getElementById('nav-btn-desktop');
+                const btnM = this.shadowRoot.getElementById('nav-btn-mobile');
+                if(btnD && btnM) {
+                    btnD.onclick = () => { btnD.classList.add('active'); btnM.classList.remove('active'); window.setPreview('desktop'); };
+                    btnM.onclick = () => { btnM.classList.add('active'); btnD.classList.remove('active'); window.setPreview('mobile'); };
+                }
+            }
+
+            initActionButtons() {
+                const saveBtn = this.shadowRoot.getElementById('action-save');
+                const dlBtn = this.shadowRoot.getElementById('action-download');
+                if(saveBtn) saveBtn.onclick = () => window.dispatchEvent(new CustomEvent('custom-navbar:save'));
+                if(dlBtn) dlBtn.onclick = () => window.dispatchEvent(new CustomEvent('custom-navbar:download'));
+            }
+
+            async initAuthListener() {
+                const apiKey = localStorage.getItem("api_key");
+                if (!apiKey) return this.render(false);
+                try {
+                    const response = await fetch(`/get_user`, {
+                        method: "GET", headers: { "Authorization": `Bearer ${apiKey}`, "Content-Type": "application/json" }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        const userObj = data.data && data.data.length > 0 ? data.data[0] : null;
+                        if (userObj) return this.render(true, userObj);
+                    }
+                    this.render(false);
+                } catch (e) { this.render(false); }
+            }
+        }
+        customElements.define("custom-navbar", CustomNavbar);
+
+
+        // ------------------------------------------------------------
+        // ---------------------- APP LOGIC ---------------------------
+        // ------------------------------------------------------------
+
+        let editor;
+        let currentFile = "index.html";
+        let projectFiles = { "index.html": "" };
+        const API_KEY = localStorage.getItem("api_key"); 
+
+        function initEditor() {
+            editor = ace.edit("editor");
+            editor.setTheme("ace/theme/twilight"); // Updated theme to match dark UI better
+            editor.session.setMode("ace/mode/html");
+            editor.setOptions({
+                fontSize: "14px",
+                fontFamily: "'JetBrains Mono', monospace",
+                showPrintMargin: false,
+                enableBasicAutocompletion: true,
+                enableLiveAutocompletion: true,
+                showGutter: true,
+                highlightActiveLine: true,
+            });
+
+            if (!projectFiles["index.html"].trim()) {
+                projectFiles["index.html"] = defaultTemplate();
+            }
+
+            editor.setValue(projectFiles["index.html"], -1);
+            editor.session.on("change", updatePreview);
+
+            refreshFileTabs();
+            refreshSidebar();
+            switchFile("index.html");
+        }
+
+        function defaultTemplate() { return `\n<div class="p-10">\n  <h1 class="text-3xl font-bold text-blue-500">Hello World</h1>\n</div>`; }
+
+        // --- UPDATED UI RENDERING FUNCTIONS (Logic remains same) ---
+        function refreshFileTabs() {
+            const container = document.getElementById("editor-tabs");
+            container.innerHTML = '';
+            
+            Object.keys(projectFiles).forEach(fileName => {
+                const tab = document.createElement("div");
+                const isActive = currentFile === fileName;
+                
+                // New VS Code Style Tab Styling
+                const baseClass = "h-full px-3 flex items-center gap-2 text-xs cursor-pointer select-none border-r border-ide-border min-w-[120px] max-w-[200px] group transition-colors";
+                const activeClass = "bg-ide-bg text-white border-t-2 border-t-neon-blue";
+                const inactiveClass = "bg-ide-sidebar text-ide-muted hover:bg-[#1f1f23] hover:text-gray-300 border-t-2 border-t-transparent";
+
+                tab.className = `${baseClass} ${isActive ? activeClass : inactiveClass}`;
+                
+                let iconClass = getIconForFile(fileName);
+                
+                tab.innerHTML = `
+                    <div class="flex items-center gap-2 truncate flex-1">
+                        <i class="${iconClass}"></i> 
+                        <span class="truncate">${fileName}</span>
+                    </div>
+                    <button class="${isActive ? 'text-gray-400 hover:text-white' : 'invisible group-hover:visible text-gray-500 hover:text-white'}">
+                        <i class="fa-solid fa-xmark text-[10px]"></i>
+                    </button>
+                `;
+                tab.onclick = (e) => {
+                    // Simple logic to ignore close button click for this demo, just switch
+                    switchFile(fileName); 
+                };
+                container.appendChild(tab);
+            });
+        }
+
+        function refreshSidebar() {
+            const container = document.getElementById("file-explorer-list");
+            container.innerHTML = '';
+
+            Object.keys(projectFiles).forEach(fileName => {
+                const div = document.createElement('div');
+                const isActive = currentFile === fileName;
+                // Updated Sidebar Item Styling
+                div.className = `flex items-center gap-2 px-4 py-1.5 text-xs cursor-pointer select-none border-l-2 ${isActive ? 'bg-[#1f1f23] text-white border-neon-blue' : 'border-transparent text-ide-muted hover:text-gray-300 hover:bg-[#18181b]'}`;
+                
+                div.onclick = () => switchFile(fileName);
+                
+                let iconClass = getIconForFile(fileName);
+                div.innerHTML = `<i class="${iconClass} w-4 text-center"></i><span class="truncate">${fileName}</span>`;
+                container.appendChild(div);
+            });
+        }
+
+        function getIconForFile(fileName) {
+            if (fileName.endsWith('.html')) return 'fa-brands fa-html5 text-orange-500';
+            if (fileName.endsWith('.css')) return 'fa-brands fa-css3-alt text-blue-400';
+            if (fileName.endsWith('.js')) return 'fa-brands fa-js text-yellow-400';
+            return 'fa-solid fa-file text-gray-500';
+        }
+
+        function createFileTab(fileName, content) {
+            projectFiles[fileName] = content;
+            refreshFileTabs();
+            refreshSidebar();
+            switchFile(fileName);
+        }
+
+        function switchFile(fileName) {
+            currentFile = fileName;
+            const ext = fileName.split(".").pop();
+            const mode = ext === 'js' ? 'javascript' : ext;
+            editor.session.setMode(`ace/mode/${mode}`);
+            editor.setValue(projectFiles[fileName], -1);
+            
+            refreshFileTabs();
+            refreshSidebar();
+            updatePreview();
+            
+            document.getElementById('lang-display').textContent = ext.toUpperCase();
+        }
+
+        function updatePreview() {
+            projectFiles[currentFile] = editor.getValue();
+
+            if (projectFiles["index.html"]) {
+                let html = projectFiles["index.html"];
+                if (projectFiles["style.css"]) html = html.replace("</head>", `<style>${projectFiles["style.css"]}</style></head>`);
+                else if (projectFiles["index.css"]) html = html.replace("</head>", `<style>${projectFiles["index.css"]}</style></head>`);
+                if (projectFiles["script.js"]) html = html.replace("</body>", `<script>${projectFiles["script.js"]}<\/script></body>`);
+                
+                document.getElementById("demo-iframe").srcdoc = html;
+            }
+        }
+
+        function setPreview(mode) {
+            const wrapper = document.getElementById('preview-frame-wrapper');
+            if (mode === 'desktop') {
+                wrapper.style.width = "100%";
+                wrapper.style.height = "100%";
+                wrapper.style.borderRadius = "0";
+                wrapper.style.border = "none";
+            } else {
+                wrapper.style.width = "375px";
+                wrapper.style.height = "812px";
+                wrapper.style.maxHeight = "90%";
+                wrapper.style.borderRadius = "40px";
+                wrapper.style.border = "12px solid #333";
+            }
+        }
+
+        // ------------------------------------------------------------
+        // ---------------------- CHAT SYSTEM -------------------------
+        // ------------------------------------------------------------
+        
+        const sendBtn = document.getElementById("sendBtn");
+        const chatInput = document.getElementById("chatInput");
+
+        sendBtn.addEventListener("click", sendMessage);
+        chatInput.addEventListener("keypress", e => { if (e.key === "Enter") sendMessage(); });
+
+        async function sendMessage() {
+            const message = chatInput.value.trim();
+            if (!message) return;
+
+            const chatMessages = document.getElementById("chatMessages");
+            const terminal = document.getElementById("ai-terminal");
+            terminal.classList.add("open"); 
+
+            // Style updated for User Message
+            const userMsg = document.createElement("div");
+            userMsg.className = "self-end text-right";
+            userMsg.innerHTML = `<div class="inline-block bg-ide-accent text-white px-3 py-2 rounded-lg rounded-tr-none text-xs">${message}</div>`;
+            chatMessages.appendChild(userMsg);
+
+            chatInput.value = "";
+            sendBtn.classList.add("loading");
+
+            // Style updated for AI Message
+            const aiMsgContainer = document.createElement("div");
+            aiMsgContainer.className = "self-start max-w-[90%]";
+            const aiMsg = document.createElement("div");
+            aiMsg.className = "text-gray-300 font-mono text-xs leading-relaxed whitespace-pre-wrap";
+            aiMsg.innerHTML = `<span class="text-neon-blue">AI is thinking...</span>`;
+            
+            aiMsgContainer.appendChild(aiMsg);
+            chatMessages.appendChild(aiMsgContainer);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            try {
+                const response = await fetch("/ask", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + (API_KEY || "mock-token") },
+                    body: JSON.stringify({ prompt: message })
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder("utf-8");
+
+                aiMsg.textContent = ""; 
+                let fullText = "";
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const chunk = decoder.decode(value);
+                    fullText += chunk;
+                    aiMsg.textContent += chunk;
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                }
+                parseAIResponse(fullText);
+
+            } catch (err) {
+                aiMsg.innerHTML = `<span class="text-red-500">Error connecting to AI: ${err.message}</span>`;
+            } finally {
+                sendBtn.classList.remove("loading");
+            }
+        }
+
+        function parseAIResponse(text) {
+            const filePattern = /<<<<<<< NEW_FILE_START (.*?) >>>>>>> NEW_FILE_END[\s\S]*?```[a-zA-Z]*\n([\s\S]*?)```/g;
+            let match;
+            let foundFiles = [];
+
+            while ((match = filePattern.exec(text)) !== null) {
+                foundFiles.push({ name: match[1].trim(), content: match[2].trim() });
+            }
+
+            if (foundFiles.length) {
+                const chatMessages = document.getElementById("chatMessages");
+                const infoMsg = document.createElement("div");
+                infoMsg.className = "mt-2 p-2 border border-green-500/20 bg-green-500/10 rounded text-green-400 text-[10px]";
+                infoMsg.innerHTML = `<i class="fa-solid fa-check mr-1"></i> Updated: ${foundFiles.map(f => f.name).join(", ")}`;
+                chatMessages.appendChild(infoMsg);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                foundFiles.forEach(f => createFileTab(f.name, f.content));
+                if(foundFiles.some(f => f.name === 'index.html')) updatePreview();
+            }
+        }
+
+        // --- DOWNLOAD & SAVE ACTIONS ---
+        // Hooked to custom-navbar events
+        window.addEventListener('custom-navbar:save', () => {
+            console.log('Saving project...', projectFiles);
+            // Add your backend Save call here
+            alert("Project saved (console log)");
+        });
+
+        window.addEventListener('custom-navbar:download', () => {
+            const zip = new JSZip();
+            for (const [fileName, content] of Object.entries(projectFiles)) {
+                zip.file(fileName, content);
+            }
+            zip.generateAsync({ type: "blob" }).then(blob => {
+                saveAs(blob, "neon-project.zip");
+            });
+        });
+
+        // --- INITIALIZATION ---
+        window.addEventListener("load", () => {
+            initEditor();
+            // Ensure mobile/desktop toggle works globally if clicked outside component logic
+            window.setPreview = setPreview; 
+        });
+
+    </script>
+</body>
+</html>

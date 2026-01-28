@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>About Us - APINOW</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        primary: { 500: '#6366f1', 600: '#4f46e5' },
+                        secondary: { 500: '#ec4899', 600: '#db2777' },
+                        dark: { 900: '#0f172a', 950: '#020617' }
+                    },
+                    animation: {
+                        'blob': 'blob 7s infinite',
+                        'fade-up': 'fadeUp 0.8s ease-out forwards',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        fadeUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Background Grid */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Avatar Container */
+        .avatar-ring {
+            background: linear-gradient(to bottom right, #6366f1, #ec4899);
+            padding: 3px;
+            border-radius: 50%;
+        }
+    </style>
+</head>
+
+<body class="bg-dark-950 text-gray-100 font-sans selection:bg-primary-500 selection:text-white flex flex-col min-h-screen">
+
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full bg-grid"></div>
+        <div class="absolute top-[-10%] left-[50%] -translate-x-1/2 w-[800px] h-[500px] bg-primary-500/10 rounded-full mix-blend-screen filter blur-3xl opacity-30"></div>
+    </div>
+
+    <div class="relative z-50">
+        <custom-navbar></custom-navbar>
+    </div>
+
+    <main class="flex-grow relative z-10 py-20 px-4 sm:px-6">
+        
+        <div class="text-center max-w-4xl mx-auto mb-20 animate-fade-up">
+            <span class="inline-block py-1 px-3 rounded-full bg-primary-500/10 text-primary-400 text-sm font-semibold mb-4 border border-primary-500/20">
+                Our Story
+            </span>
+            <h1 class="text-5xl md:text-6xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white via-gray-200 to-gray-500">
+                Meet the Innovators
+            </h1>
+            <p class="text-xl text-gray-400 max-w-2xl mx-auto">
+                The creative minds and technical wizards building the next generation of AI-powered web development tools.
+            </p>
+        </div>
+
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+            <div class="glass-card rounded-2xl p-8 text-center group animate-fade-up" style="animation-delay: 0.1s;">
+                <div class="relative w-32 h-32 mx-auto mb-6">
+                    <div class="avatar-ring w-full h-full">
+                        <img src="https://yt3.googleusercontent.com/Ns5jeu0SUPLw1xsFeLgcycJBfy_Qr-beAKdwPY1FuDFOVKdEkLwABtRF1c06ISIlrmwZkVlKkg=s160-c-k-c0x00ffffff-no-rj" alt="Lakhan" class="w-full h-full rounded-full object-cover border-4 border-dark-950">
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-1">Lakhan</h3>
+                <p class="text-primary-400 font-medium mb-4">Founder & CEO</p>
+                <p class="text-gray-400 text-sm leading-relaxed mb-6">
+                    A Class 11 visionary passionate about AI and automation. Driving the innovation behind APINOW to simplify coding for everyone.
+                </p>
+                <div class="flex justify-center gap-4 text-gray-500">
+                    <a href="#" class="hover:text-white transition-colors"><i data-feather="github" class="w-5 h-5"></i></a>
+                    <a href="#" class="hover:text-blue-400 transition-colors"><i data-feather="linkedin" class="w-5 h-5"></i></a>
+                    <a href="#" class="hover:text-sky-400 transition-colors"><i data-feather="twitter" class="w-5 h-5"></i></a>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-8 text-center group animate-fade-up" style="animation-delay: 0.2s;">
+                <div class="relative w-32 h-32 mx-auto mb-6">
+                    <div class="avatar-ring w-full h-full">
+                        <img src="https://i.pinimg.com/236x/86/18/a1/8618a196aad1bb6e5dc889af5b1e6671.jpg" alt="Himanshu" class="w-full h-full rounded-full object-cover border-4 border-dark-950">
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-1">Himanshu</h3>
+                <p class="text-secondary-400 font-medium mb-4">Chief Operating Officer</p>
+                <p class="text-gray-400 text-sm leading-relaxed mb-6">
+                    Ensures smooth daily operations, coordinates team workflows, and focuses on optimizing the user development process.
+                </p>
+                <div class="flex justify-center gap-4 text-gray-500">
+                    <a href="#" class="hover:text-white transition-colors"><i data-feather="github" class="w-5 h-5"></i></a>
+                    <a href="#" class="hover:text-blue-400 transition-colors"><i data-feather="linkedin" class="w-5 h-5"></i></a>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-8 text-center group animate-fade-up" style="animation-delay: 0.3s;">
+                <div class="relative w-32 h-32 mx-auto mb-6">
+                    <div class="avatar-ring w-full h-full">
+                        <img src="https://static.vecteezy.com/system/resources/previews/027/615/356/large_2x/boy-vintage-logo-line-art-concept-black-and-white-color-hand-drawn-illustration-vector.jpg" alt="Md Aawej Ali" class="w-full h-full rounded-full object-cover border-4 border-dark-950">
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-1">Md Aawej Ali</h3>
+                <p class="text-blue-400 font-medium mb-4">Head of Marketing</p>
+                <p class="text-gray-400 text-sm leading-relaxed mb-6">
+                    Builds APINOW’s presence through strategic marketing, community engagement, and expanding global brand reach.
+                </p>
+                <div class="flex justify-center gap-4 text-gray-500">
+                    <a href="#" class="hover:text-blue-400 transition-colors"><i data-feather="linkedin" class="w-5 h-5"></i></a>
+                    <a href="#" class="hover:text-pink-400 transition-colors"><i data-feather="instagram" class="w-5 h-5"></i></a>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-8 text-center group animate-fade-up" style="animation-delay: 0.4s;">
+                <div class="relative w-32 h-32 mx-auto mb-6">
+                    <div class="avatar-ring w-full h-full">
+                        <img src="https://static.vecteezy.com/system/resources/previews/023/632/943/non_2x/anime-boy-black-and-white-logo-vector.jpg" alt="Prince Pandey" class="w-full h-full rounded-full object-cover border-4 border-dark-950">
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-1">Prince Pandey</h3>
+                <p class="text-indigo-400 font-medium mb-4">Chief Financial Officer</p>
+                <p class="text-gray-400 text-sm leading-relaxed mb-6">
+                    Manages budgeting, financial planning, and resource allocation to ensure long-term stability and growth.
+                </p>
+                <div class="flex justify-center gap-4 text-gray-500">
+                    <a href="#" class="hover:text-blue-400 transition-colors"><i data-feather="linkedin" class="w-5 h-5"></i></a>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-8 text-center group animate-fade-up" style="animation-delay: 0.5s;">
+                <div class="relative w-32 h-32 mx-auto mb-6">
+                    <div class="avatar-ring w-full h-full">
+                        <img src="https://i.pinimg.com/736x/3b/ac/ee/3baceedc0633c8cc703cad96f79816de.jpg" alt="Ved Prakash" class="w-full h-full rounded-full object-cover border-4 border-dark-950">
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold text-white mb-1">Ved Prakash</h3>
+                <p class="text-emerald-400 font-medium mb-4">Head of HR</p>
+                <p class="text-gray-400 text-sm leading-relaxed mb-6">
+                    Handles team coordination, recruitment, and internal communication to maintain a creative and productive environment.
+                </p>
+                <div class="flex justify-center gap-4 text-gray-500">
+                    <a href="#" class="hover:text-blue-400 transition-colors"><i data-feather="linkedin" class="w-5 h-5"></i></a>
+                </div>
+            </div>
+
+            <div class="glass-card rounded-2xl p-8 text-center flex flex-col justify-center items-center border-dashed border-gray-700 animate-fade-up" style="animation-delay: 0.6s;">
+                <div class="w-20 h-20 rounded-full bg-gray-800 flex items-center justify-center mb-6">
+                    <i data-feather="plus" class="w-8 h-8 text-gray-400"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white mb-2">Join the Team</h3>
+                <p class="text-gray-400 text-sm mb-6">
+                    We are always looking for talented developers and creators.
+                </p>
+                <a href="/careers" class="text-primary-400 font-medium hover:text-primary-300 transition-colors">View Openings &rarr;</a>
+            </div>
+
+        </div>
+
+    </main>
+
+    <div class="relative z-50">
+        <custom-footer></custom-footer>
+    </div>
+
+    <script>
+        feather.replace();
+    </script>
+    <script src="/9203945.js"></script>
+    <script src="/92038405.js"></script>
+    <script src="/92384050.js"></script>
+    <script src="/909909009.js"></script>
+    <script src="/9023883.js"></script>
+
+</body>
+</html>

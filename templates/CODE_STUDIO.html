@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Studio - APINOW</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Outfit', 'sans-serif'] },
+                    colors: {
+                        primary: { 500: '#6366f1', 600: '#4f46e5' },
+                        secondary: { 500: '#ec4899', 600: '#db2777' },
+                        dark: { 800: '#1e293b', 900: '#0f172a', 950: '#020617' }
+                    },
+                    animation: {
+                        'blob': 'blob 7s infinite',
+                        'fade-up': 'fadeUp 0.8s ease-out forwards',
+                    },
+                    keyframes: {
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        },
+                        fadeUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Grid Background */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+        }
+
+        /* Glass Card */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s ease;
+        }
+
+        .glass-card:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        }
+
+        /* Loader */
+        .loader {
+            border: 3px solid rgba(255,255,255,0.1);
+            border-radius: 50%;
+            border-top: 3px solid #6366f1;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+
+<body class="bg-dark-950 text-gray-100 font-sans min-h-screen flex flex-col">
+
+    <div class="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full bg-grid"></div>
+        <div class="absolute top-[-10%] left-[20%] w-96 h-96 bg-primary-500/20 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob"></div>
+        <div class="absolute bottom-[-10%] right-[20%] w-96 h-96 bg-secondary-500/20 rounded-full mix-blend-screen filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+    </div>
+
+    <div class="relative z-50">
+        <custom-navbar></custom-navbar>
+    </div>
+
+    <main class="relative z-10 flex-grow container mx-auto px-4 py-20">
+        
+        <section class="text-center mb-16 animate-fade-up">
+            <h1 class="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-indigo-200 to-indigo-400 mb-4">
+                Code Studio
+            </h1>
+            <p class="text-lg text-gray-400 mb-8 max-w-xl mx-auto">
+                Your AI-powered workspace. Manage your projects, deploy APIs, and build faster.
+            </p>
+            
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="/Code_studio/new" class="group relative px-6 py-3 bg-gradient-to-r from-primary-600 to-secondary-600 rounded-xl font-semibold text-white shadow-lg shadow-primary-500/20 hover:scale-105 transition-all duration-300">
+                    <span class="flex items-center gap-2">
+                        <i data-feather="plus-circle" class="w-5 h-5"></i>
+                        New Project
+                    </span>
+                </a>
+                
+                <a href="/Templates" class="px-6 py-3 rounded-xl border border-gray-700 hover:bg-gray-800 text-gray-300 font-semibold transition-all duration-300 hover:border-gray-500">
+                    <span class="flex items-center gap-2">
+                        <i data-feather="layout" class="w-5 h-5"></i>
+                        Browse Templates
+                    </span>
+                </a>
+            </div>
+        </section>
+
+        <div class="flex justify-between items-center mb-8 pb-4 border-b border-gray-800/50 animate-fade-up" style="animation-delay: 0.1s;">
+            <h2 class="text-xl font-semibold text-white flex items-center gap-2">
+                <i data-feather="folder" class="w-5 h-5 text-primary-500"></i> Your Projects
+            </h2>
+            <div class="text-sm text-gray-500" id="project-count">Loading...</div>
+        </div>
+
+        <div id="projects-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-up" style="animation-delay: 0.2s;">
+            <div class="col-span-full flex flex-col items-center justify-center py-20 text-gray-500">
+                <div class="loader mb-4"></div>
+                <p>Fetching your repositories...</p>
+            </div>
+        </div>
+
+    </main>
+
+    <div class="relative z-50">
+        <custom-footer></custom-footer>
+    </div>
+
+    <script src="/92038405.js"></script>
+    <script src="/9203945.js"></script>
+    <script src="/909909009.js"></script>
+    <script src="/9023883.js"></script>
+    
+    <script>
+        // Initial feather replace for static icons
+        feather.replace();
+    </script>
+
+    <script type="module">
+        import { requireAuth } from "/9309456.js";
+
+        // 1. Authenticate
+        const user = await requireAuth();
+        console.log("Current User:", user);
+
+        // 2. Get User Data
+        const USERID = localStorage.getItem("UID");
+        const Username = localStorage.getItem("USERNAME");
+
+        if (!Username) console.error("❌ No USERNAME found");
+        
+        if (!USERID) {
+            console.error("❌ No UID found");
+            document.getElementById("projects-grid").innerHTML = `
+                <div class="col-span-full text-center text-red-400 py-10 glass-card rounded-xl">
+                    Please log in to view projects.
+                </div>
+            `;
+        } else {
+            loadRepos(USERID);
+        }
+
+        // 3. Fetch Repos
+        async function loadRepos(user_id) {
+            try {
+                const response = await fetch("/get_repo", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ user_id }),
+                });
+
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.error || "Failed to load");
+                }
+
+                renderProjects(result.data);
+                
+                // Update Count
+                const count = result.data ? result.data.length : 0;
+                document.getElementById("project-count").innerText = `${count} Projects`;
+
+            } catch (error) {
+                console.error("Fetch error:", error);
+                document.getElementById("projects-grid").innerHTML = `
+                    <div class="col-span-full text-center text-gray-400 py-10">
+                        <p class="text-red-400 mb-2">Error loading projects.</p>
+                        <p class="text-sm opacity-50">${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // 4. Render Cards
+        function renderProjects(repos) {
+            const grid = document.getElementById("projects-grid");
+            grid.innerHTML = "";
+
+            if (!repos || repos.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-span-full text-center py-16 border border-dashed border-gray-700 rounded-2xl bg-gray-900/30">
+                        <div class="inline-block p-4 rounded-full bg-gray-800 mb-4">
+                            <i data-feather="folder-plus" class="w-8 h-8 text-gray-500"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-300">No projects yet</h3>
+                        <p class="text-gray-500 mt-2 mb-6">Create your first AI-powered project to get started.</p>
+                        <a href="/Code_studio/new" class="text-primary-400 hover:text-primary-300 font-medium">Create Project →</a>
+                    </div>
+                `;
+                feather.replace();
+                return;
+            }
+
+            repos.forEach(repo => {
+                const projectName = Object.keys(repo)[0];
+                const projectData = repo[projectName];
+                const repo_id = projectData.repo_id;
+                
+                // Random gradient for icon placeholder
+                const gradients = [
+                    'from-blue-500 to-purple-500',
+                    'from-emerald-500 to-teal-500',
+                    'from-orange-500 to-red-500',
+                    'from-pink-500 to-rose-500'
+                ];
+                const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
+
+                const cardHTML = `
+                    <div class="glass-card rounded-2xl p-6 group relative cursor-pointer" 
+                         onclick="window.location.href='/Code_studio/${Username}/${repo_id}'">
+                        
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="w-12 h-12 rounded-lg bg-gradient-to-br ${randomGradient} flex items-center justify-center shadow-lg">
+                                <i data-feather="code" class="text-white w-6 h-6"></i>
+                            </div>
+                            <span class="text-xs font-mono text-gray-500 bg-gray-800/50 px-2 py-1 rounded border border-gray-700">
+                                ${repo_id.substring(0, 6)}...
+                            </span>
+                        </div>
+
+                        <h3 class="text-xl font-bold text-white mb-2 group-hover:text-primary-400 transition-colors">
+                            ${projectName}
+                        </h3>
+                        
+                        <p class="text-sm text-gray-400 mb-6 line-clamp-2">
+                            Python/Flask Project. Click to open the editor environment.
+                        </p>
+
+                        <div class="flex items-center justify-between border-t border-gray-700/50 pt-4 mt-auto">
+                            <span class="text-xs text-gray-500 flex items-center gap-1">
+                                <div class="w-2 h-2 rounded-full bg-green-500"></div> Active
+                            </span>
+                            <a href="/Code_studio/${Username}/${repo_id}" 
+                               class="text-sm font-medium text-primary-400 flex items-center gap-1 hover:translate-x-1 transition-transform">
+                                Open <i data-feather="arrow-right" class="w-4 h-4"></i>
+                            </a>
+                        </div>
+                    </div>
+                `;
+                
+                grid.innerHTML += cardHTML;
+            });
+
+            // Re-run feather replace to render icons in new HTML
+            feather.replace();
+        }
+    </script>
+
+</body>
+</html>
