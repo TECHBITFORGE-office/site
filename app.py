@@ -93,7 +93,7 @@ class Deepinfra:
         model: str,
         messages: List[Dict[str, str]],
         stream: bool = False,
-        max_tokens: int = 2048,
+        max_tokens: int = 10000000000,
         timeout: Optional[int] = None
     ):
         url = f"{self.base_url}/v1/chat/completions"
@@ -665,3 +665,4 @@ import os
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7860))
     app.run(host="0.0.0.0", port=port,debug=False)
+
