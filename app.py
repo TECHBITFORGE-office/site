@@ -63,13 +63,13 @@ class LLMCHAT:
 
     def create(
             self,
-            message: list,
+            messages: list,
             max_tokens: int = 2048,
             model:str=  "deepseek-r1-distill-qwen-32b",
             stream: bool = True
             ):
         self.default_model = model
-        self.messages = message
+        self.messages = messages
         self.max_tokens = max_tokens
         if stream:
             return self.__generate__()
@@ -596,4 +596,5 @@ import os
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 7860))
     app.run(host="0.0.0.0", port=port,debug=False)
+
 
